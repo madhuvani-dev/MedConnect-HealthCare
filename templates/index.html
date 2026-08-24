@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}MedConnect - Connect with Nearby Verified Pharmacies{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+  <h1 class="hero-title">Find Medicines & Verify Prescriptions Near You</h1>
+  <p class="hero-subtitle">
+    MedConnect seamlessly broadcasts your prescription or medicine availability request to verified local pharmacies within a 5 km radius, expanding automatically if needed.
+  </p>
+</section>
+
+<!-- 3 Role Portals -->
+<div class="grid-3" style="margin-bottom: 40px;">
+  <!-- Patient Card -->
+  <div class="role-card">
+    <div class="role-icon">👤</div>
+    <h2 class="card-title" style="margin-bottom: 8px;">Patient Portal</h2>
+    <p class="text-muted" style="font-size: 0.92rem; margin-bottom: 20px; flex: 1;">
+      Upload prescriptions or query medicine names. Nearby pharmacies check their stock and reply with instant availability status.
+    </p>
+    <div style="display: flex; gap: 8px; justify-content: center;">
+      <a href="{{ url_for('login_page') }}" class="btn btn-primary btn-block">Patient Login</a>
+    </div>
+  </div>
+
+  <!-- Pharmacy Card -->
+  <div class="role-card">
+    <div class="role-icon">💊</div>
+    <h2 class="card-title" style="margin-bottom: 8px;">Pharmacy Portal</h2>
+    <p class="text-muted" style="font-size: 0.92rem; margin-bottom: 20px; flex: 1;">
+      Register with your Drug License (DL) number. Receive real-time medicine requests from patients within your service radius.
+    </p>
+    <div style="display: flex; gap: 8px; justify-content: center;">
+      <a href="{{ url_for('login_page') }}" class="btn btn-outline btn-block">Pharmacy Login</a>
+    </div>
+  </div>
+
+  <!-- Admin Card -->
+  <div class="role-card">
+    <div class="role-icon">🛡️</div>
+    <h2 class="card-title" style="margin-bottom: 8px;">Admin Console</h2>
+    <p class="text-muted" style="font-size: 0.92rem; margin-bottom: 20px; flex: 1;">
+      Verify pharmacy registrations, inspect Drug License credentials, approve or reject store applications, and audit platform activity.
+    </p>
+    <div style="display: flex; gap: 8px; justify-content: center;">
+      <a href="{{ url_for('login_page') }}" class="btn btn-secondary btn-block">Admin Login</a>
+    </div>
+  </div>
+</div>
+
+<!-- How MedConnect Works -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">How MedConnect Operates</h3>
+  </div>
+  <div class="grid-3" style="gap: 20px;">
+    <div>
+      <h4 style="color: var(--primary-dark); margin-bottom: 6px;">1. Patient Inquires</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">
+        A patient uploads a prescription or enters a specific medicine name along with their location.
+      </p>
+    </div>
+    <div>
+      <h4 style="color: var(--primary-dark); margin-bottom: 6px;">2. Geographic Radius Filter</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">
+        The system queries verified pharmacies within 5 km using the Haversine formula, with single-click +5 km radius expansion.
+      </p>
+    </div>
+    <div>
+      <h4 style="color: var(--primary-dark); margin-bottom: 6px;">3. Direct Pharmacy Response</h4>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">
+        Pharmacies respond with <em>All Available</em>, <em>Some Available</em>, or <em>Not Available</em>, and contact coordinates.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

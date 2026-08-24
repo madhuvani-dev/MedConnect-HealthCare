@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - MedConnect{% endblock %}
+
+{% block content %}
+<!-- Welcome & Overview Banner -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--text-main);">
+      Patient Portal: Welcome, <span id="patient-display-name">Patient</span>
+    </h1>
+    <p class="text-muted" style="font-size: 0.95rem;">
+      Broadcast prescriptions and medicine inquiries to verified pharmacies near your current location.
+    </p>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom: 24px;">
+
+  <!-- Card 1: Your Location Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">📍 Your Location</h3>
+      <span id="location-status-badge" class="badge badge-pending">
+        Checking...
+      </span>
+    </div>
+
+    <div style="margin: 16px 0;">
+      <div id="patient-location-display-box" style="background: var(--bg-muted); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">
+          Current Registered Location
+        </span>
+        <p id="current-location-address" style="font-size: 1.05rem; font-weight: 600; color: var(--text-main); margin: 0; line-height: 1.4;">
+          Loading location...
+        </p>
+      </div>
+      <p class="text-muted" style="font-size: 0.85rem; margin: 0;">
+        Medicine requests and prescriptions are broadcast to verified pharmacies near this location.
+      </p>
+    </div>
+
+    <button type="button"
+            id="btn-open-location-modal"
+            class="btn btn-primary"
+            onclick="openLocationModal()">
+      📍 Update Location
+    </button>
+  </div>
+
+  <!-- Card 2: Create New Request -->
+  <div class="card">
+
+    <div class="card-header">
+      <h3 class="card-title">2. New Medicine Request</h3>
+    </div>
+
+    <!-- Request Type Tabs -->
+    <div class="tabs">
+      <button id="tab-req-rx"
+              class="tab-btn active">
+        📄 Upload Prescription
+      </button>
+
+      <button id="tab-req-name"
+              class="tab-btn">
+        💊 Enter Medicine Name
+      </button>
+    </div>
+
+    <!-- Option A: Prescription Upload -->
+    <div id="form-prescription-section"
+         class="tab-content active">
+
+      <form id="form-prescription-upload">
+
+        <div class="form-group">
+
+          <label class="form-label"
+                 for="prescription-file">
+            Select Prescription Image or Document *
+          </label>
+
+          <input type="file"
+                 id="prescription-file"
+                 class="form-control"
+                 accept=".png,.jpg,.jpeg,.pdf,.webp"
+                 required>
+
+          <span class="form-hint">
+            Accepted formats: PNG, JPG, JPEG, PDF, WEBP (Max 10MB)
+          </span>
+
+        </div>
+
+        <button type="submit"
+                id="btn-submit-rx"
+                class="btn btn-primary btn-block">
+          Broadcast Prescription Request (5 km Radius)
+        </button>
+
+      </form>
+
+    </div>
+
+    <!-- Option B: Medicine Name Query -->
+    <div id="form-medicine-section"
+         class="tab-content">
+
+      <form id="form-medicine-name">
+
+        <div class="form-group">
+
+          <label class="form-label"
+                 for="medicine-name-input">
+            Medicine Name & Strength *
+          </label>
+
+          <input type="text"
+                 id="medicine-name-input"
+                 class="form-control"
+                 placeholder="e.g. Paracetamol 650mg, Amoxicillin 500mg"
+                 required>
+
+          <span class="form-hint">
+            Enter the exact trade name or generic molecule you are searching for.
+          </span>
+
+        </div>
+
+        <button type="submit"
+                id="btn-submit-med"
+                class="btn btn-primary btn-block">
+          Check Availability Nearby (5 km Radius)
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Card 3: Active Requests & Responses Table -->
+<div class="card">
+
+  <div class="card-header">
+
+    <h3 class="card-title">
+      Your Active Requests & Availability Responses
+    </h3>
+
+    <button onclick="loadPatientRequests()"
+            class="btn btn-sm btn-outline">
+      🔄 Refresh
+    </button>
+
+  </div>
+
+  <div class="table-responsive">
+
+    <table class="table">
+
+      <thead>
+
+        <tr>
+          <th>Req ID</th>
+          <th>Type</th>
+          <th>Medicine / Prescription</th>
+          <th>Search Radius</th>
+          <th>Pharmacy Responses</th>
+          <th>Created At</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+
+      </thead>
+
+      <tbody id="patient-requests-tbody">
+        <!-- Injected dynamically by patient.js -->
+      </tbody>
+
+    </table>
+
+  </div>
+
+  <div id="no-requests-message"
+       class="empty-state"
+       style="display: none;">
+
+    <div class="empty-state-icon">
+      📋
+    </div>
+
+    <h4>
+      No requests submitted yet
+    </h4>
+
+    <p class="text-muted">
+      Use the request form above to broadcast your first prescription
+      or medicine query to local pharmacies.
+    </p>
+
+  </div>
+
+</div>
+
+<!-- EMBEDDED HEALTH GUIDANCE & MEDICAL DISCLAIMER SECTION -->
+<div class="health-guidance-box">
+
+  <div class="health-guidance-header">
+
+    <span style="font-size: 1.3rem;">
+      🩺
+    </span>
+
+    <h4 style="margin-bottom: 0;">
+      Important Health Guidance & Medical Consultation Advisory
+    </h4>
+
+  </div>
+
+  <div class="health-guidance-text">
+
+    <p style="margin-bottom: 8px;">
+
+      <strong>
+        Notice on Medical Diagnosis & Self-Medication:
+      </strong>
+
+      If you are experiencing health symptoms and do not know which medicine to take,
+      MedConnect does not provide automatic medical diagnosis or drug recommendations.
+      Always consult a licensed medical doctor or certified healthcare professional
+      for an accurate diagnosis and prescription.
+
+    </p>
+
+    <p style="margin-bottom: 0;">
+
+      <strong>
+        Pharmacy Support:
+      </strong>
+
+      Local licensed pharmacists can clarify dosage instructions and verify doctor
+      prescriptions. Once you receive responses from verified pharmacies on this
+      dashboard, you can contact them directly using the verified telephone numbers
+      provided.
+
+    </p>
+
+  </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL: NEARBY VERIFIED PHARMACIES & INTERACTIVE MAP       -->
+<!-- ========================================================= -->
+
+<div id="responses-modal-backdrop"
+     class="modal-backdrop">
+
+  <div class="modal" style="max-width: 820px;">
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+
+      <div>
+        <h3 id="modal-request-title"
+            class="card-title"
+            style="font-size: 1.15rem; margin-bottom: 4px;">
+          Nearby Verified Pharmacies
+        </h3>
+        <p id="modal-request-subtitle"
+           class="text-muted"
+           style="font-size: 0.85rem; margin: 0;">
+          Loading pharmacy details...
+        </p>
+      </div>
+
+      <button type="button"
+              class="close-btn"
+              onclick="closeModal()">
+        &times;
+      </button>
+
+    </div>
+
+    <!-- Modal Action & Summary Bar -->
+    <div id="modal-summary-bar"
+         style="padding: 12px 24px; background: var(--bg-muted); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div id="modal-pharmacy-stats" style="font-size: 0.9rem; color: var(--text-main); font-weight: 500;">
+        Searching nearby verified pharmacies...
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button"
+                id="btn-toggle-map"
+                class="btn btn-sm btn-outline"
+                onclick="togglePharmacyMap()">
+          🗺️ View on Map
+        </button>
+        <button type="button"
+                id="btn-modal-expand-radius"
+                class="btn btn-sm btn-secondary"
+                style="display: none;">
+          +5 km Radius
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Map Section inside Modal (Collapsible / Toggleable) -->
+    <div id="pharmacy-map-wrapper"
+         style="display: none; padding: 16px 24px; background: #f8fafc; border-bottom: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-main);">
+          🗺️ Interactive Map (Click markers for directions)
+        </span>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+          📍 Your Pin &nbsp;|&nbsp; 🏪 Pharmacy Pins
+        </span>
+      </div>
+      <div id="pharmacy-map"
+           style="height: 320px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: #e2e8f0;">
+      </div>
+    </div>
+
+    <!-- Pharmacy List -->
+    <div id="modal-responses-list"
+         class="modal-body"
+         style="max-height: 55vh; overflow-y: auto;">
+      <!-- Injected dynamically by patient.js -->
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button type="button"
+              class="btn btn-secondary"
+              onclick="closeModal()">
+        Close
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL: UPDATE PATIENT LOCATION                            -->
+<!-- ========================================================= -->
+<div id="location-modal-backdrop" class="modal-backdrop">
+  <div class="modal" style="max-width: 680px;">
+    <div class="modal-header">
+      <div>
+        <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Update Your Location</h3>
+        <p class="text-muted" style="font-size: 0.85rem; margin: 0;">
+          Search an address, click on the map, or use current location to update your proximity point.
+        </p>
+      </div>
+      <button type="button" class="close-btn" onclick="closeLocationModal()">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding: 20px;">
+      <div id="dash-modal-loc-alert" class="alert" style="display: none; margin-bottom: 14px;"></div>
+
+      <!-- Location Search Box -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <input type="text" id="dash-modal-loc-search" class="form-control" placeholder="Search your location (e.g. Jubilee Hills, Hyderabad)...">
+        <button type="button" id="btn-dash-search-loc" class="btn btn-secondary" style="white-space: nowrap;">
+          🔍 Search
+        </button>
+      </div>
+
+      <!-- Interactive Map (Height 360px) -->
+      <div id="dash-location-map" style="height: 360px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 12px; z-index: 1;"></div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+        <button type="button" id="btn-dash-detect-loc" class="btn btn-sm btn-outline">
+          📍 Use My Current Location
+        </button>
+        <div id="dash-loc-feedback" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+      </div>
+
+      <!-- Selected Human-Readable Location Box -->
+      <div style="background: var(--bg-muted); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+        <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">
+          Selected location:
+        </span>
+        <strong id="dash-selected-address-text" style="font-size: 0.95rem; color: var(--text-main);">
+          Click anywhere on the map or search above.
+        </strong>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">
+        Cancel
+      </button>
+      <button type="button" id="btn-dash-save-location" class="btn btn-primary" onclick="saveUpdatedPatientLocation()">
+        Save Location
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+<!-- ========================================================= -->
+<!-- PAGE SCRIPTS                                              -->
+<!-- ========================================================= -->
+
+{% block scripts %}
+
+<!-- MedConnect Patient JavaScript -->
+<script src="{{ url_for('static', filename='js/patient.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Register - MedConnect{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 10px auto;">
+  <div class="card">
+    <div class="card-header" style="display: block; text-align: center; border-bottom: none;">
+      <h2 class="card-title" style="font-size: 1.6rem;">Create a MedConnect Account</h2>
+      <p class="text-muted" style="font-size: 0.92rem; margin-top: 4px;">
+        Choose whether you are registering as a Patient or a Pharmacy Store
+      </p>
+    </div>
+
+    <!-- Role Selection Tabs -->
+    <div class="tabs" style="justify-content: center; margin-top: 8px;">
+      <button id="tab-patient-btn" class="tab-btn active">👤 Patient Registration</button>
+      <button id="tab-pharmacy-btn" class="tab-btn">💊 Pharmacy Registration</button>
+    </div>
+
+    <!-- 1. Patient Registration Form Container -->
+    <div id="form-patient-container" class="tab-content active" style="margin-top: 20px;">
+      <div id="patient-reg-alert" class="alert" style="display: none;"></div>
+
+      <form id="form-register-patient" onsubmit="return false;">
+        <div class="form-group">
+          <label class="form-label" for="patient-name">Full Name *</label>
+          <input type="text" id="patient-name" class="form-control" placeholder="e.g. John Doe" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="patient-email">Email Address *</label>
+            <input type="email" id="patient-email" class="form-control" placeholder="john@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="patient-phone">Phone Number *</label>
+            <input type="tel" id="patient-phone" class="form-control" placeholder="e.g. 9876543210" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="patient-password">Password *</label>
+          <input type="password" id="patient-password" class="form-control" placeholder="Create a secure password" required minlength="6">
+        </div>
+
+        <!-- Patient Location Map Picker -->
+        <div class="card" style="background: var(--bg-muted); border: 1px solid var(--border-color); padding: 18px; margin-bottom: 20px;">
+          <label class="form-label" style="font-size: 1rem; font-weight: 700; margin-bottom: 6px; color: var(--primary-dark);">
+            Choose Your Location *
+          </label>
+          <p class="form-hint" style="margin-bottom: 12px;">
+            MedConnect uses your location to calculate distance and broadcast your requests to verified pharmacies nearby.
+          </p>
+
+          <!-- Location Search Bar -->
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="patient-loc-search" class="form-control" placeholder="Search your location (e.g. Madhapur, Hyderabad)...">
+            <button type="button" id="btn-patient-search-loc" class="btn btn-secondary" style="white-space: nowrap;">
+              🔍 Search
+            </button>
+          </div>
+
+          <!-- Interactive Map Container -->
+          <div id="patient-reg-map" style="height: 340px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); z-index: 1; margin-bottom: 12px;"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <button type="button" id="btn-patient-detect-loc" class="btn btn-sm btn-outline">
+              📍 Use My Current Location
+            </button>
+            <div id="patient-loc-action-feedback" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+          </div>
+
+          <!-- Hidden Form Fields for Latitude & Longitude -->
+          <input type="hidden" id="patient-lat" name="latitude">
+          <input type="hidden" id="patient-lng" name="longitude">
+
+          <!-- Human-Readable Selected Address Display -->
+          <div style="background: var(--bg-surface); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">
+              Selected location:
+            </span>
+            <div id="patient-selected-address" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">
+              No location selected yet. Click on the map, search above, or use current location.
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-patient-submit" class="btn btn-primary btn-block btn-lg">
+          Complete Patient Registration
+        </button>
+      </form>
+    </div>
+
+    <!-- 2. Pharmacy Registration Form Container -->
+    <div id="form-pharmacy-container" class="tab-content" style="margin-top: 20px;">
+      <div id="pharmacy-reg-alert" class="alert" style="display: none;"></div>
+
+      <div class="alert alert-info" style="font-size: 0.88rem;">
+        ℹ️ <strong>Admin Verification Required:</strong> New pharmacy registrations will be reviewed by the system administrator against their Drug License (DL) number before access is activated.
+      </div>
+
+      <form id="form-register-pharmacy" onsubmit="return false;">
+        <h4 style="color: var(--primary-dark); margin-bottom: 14px; font-size: 1.05rem;">1. Pharmacy Store Information</h4>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="pharmacy-name">Pharmacy Store Name *</label>
+            <input type="text" id="pharmacy-name" class="form-control" placeholder="e.g. MedLife Care Chemists" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pharmacy-owner">Proprietor / Owner Name *</label>
+            <input type="text" id="pharmacy-owner" class="form-control" placeholder="e.g. Dr. Rajesh Kumar" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pharmacy-dl">Drug License (DL) Registration Number *</label>
+          <input type="text" id="pharmacy-dl" class="form-control" placeholder="e.g. DL-20B-12345/21B" required style="font-family: monospace; font-weight: 600;">
+          <span class="form-hint">Required by Drug Control Authority for medical dispensing verification.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pharmacy-address">Complete Physical Address *</label>
+          <textarea id="pharmacy-address" class="form-control" rows="2" placeholder="Shop No. 4, Main Road, Near City Hospital..." required></textarea>
+        </div>
+
+        <h4 style="color: var(--primary-dark); margin-top: 20px; margin-bottom: 14px; font-size: 1.05rem;">2. Select Pharmacy Location *</h4>
+        <div class="card" style="background: var(--bg-muted); border: 1px solid var(--border-color); padding: 18px; margin-bottom: 20px;">
+          <p class="form-hint" style="margin-bottom: 12px;">
+            MedConnect uses these coordinates to calculate distance from patients looking for medicines.
+          </p>
+
+          <!-- Pharmacy Location Search Bar -->
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="pharmacy-loc-search" class="form-control" placeholder="Search pharmacy location (e.g. Begumpet, Hyderabad)...">
+            <button type="button" id="btn-pharmacy-search-loc" class="btn btn-secondary" style="white-space: nowrap;">
+              🔍 Search
+            </button>
+          </div>
+
+          <!-- Interactive Pharmacy Map Container -->
+          <div id="pharmacy-reg-map" style="height: 340px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); z-index: 1; margin-bottom: 12px;"></div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+            <button type="button" id="btn-pharmacy-detect-loc" class="btn btn-sm btn-outline">
+              📍 Use My Current Location
+            </button>
+            <div id="pharmacy-loc-action-feedback" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+          </div>
+
+          <!-- Hidden Form Fields for Latitude & Longitude -->
+          <input type="hidden" id="pharmacy-lat" name="latitude">
+          <input type="hidden" id="pharmacy-lng" name="longitude">
+
+          <!-- Human-Readable Selected Address Display -->
+          <div style="background: var(--bg-surface); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 2px;">
+              Selected location:
+            </span>
+            <div id="pharmacy-selected-address" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">
+              No location selected yet. Click on the map, search above, or use current location.
+            </div>
+          </div>
+        </div>
+
+        <h4 style="color: var(--primary-dark); margin-top: 20px; margin-bottom: 14px; font-size: 1.05rem;">3. Login Credentials</h4>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="pharmacy-contact-name">Primary Contact Person *</label>
+            <input type="text" id="pharmacy-contact-name" class="form-control" placeholder="e.g. Rajesh Kumar" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pharmacy-phone">Pharmacy Phone / Mobile *</label>
+            <input type="tel" id="pharmacy-phone" class="form-control" placeholder="e.g. 9811223344" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="pharmacy-email">Login Email Address *</label>
+            <input type="email" id="pharmacy-email" class="form-control" placeholder="store@medconnect.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pharmacy-password">Password *</label>
+            <input type="password" id="pharmacy-password" class="form-control" placeholder="••••••••" required minlength="6">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">
+          Submit Pharmacy Registration for Approval
+        </button>
+      </form>
+    </div>
+
+    <div style="margin-top: 24px; text-align: center; font-size: 0.9rem;">
+      <span class="text-muted">Already registered?</span>
+      <a href="{{ url_for('login_page') }}" style="font-weight: 600; margin-left: 4px;">Sign in to your account</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Pharmacy Portal - MedConnect{% endblock %}
+
+{% block content %}
+<!-- Welcome & Pharmacy Badge Header -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin-bottom: 0;">
+        <span id="pharmacy-display-name">Pharmacy Portal</span>
+      </h1>
+      <span class="badge badge-approved">✓ Verified by Drug Control Admin</span>
+    </div>
+    <p class="text-muted" style="font-size: 0.95rem;">
+      Owner: <strong id="pharmacy-display-owner">-</strong> | DL No: <strong id="pharmacy-display-dl" style="font-family: monospace;">-</strong>
+    </p>
+  </div>
+</div>
+
+<!-- Pharmacy Info Summary Card -->
+<div class="card" style="padding: 16px 20px; margin-bottom: 24px; background: #f0fdfa; border-color: #99f6e4;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 0.9rem;">
+    <div>
+      <span style="color: #0f766e; font-weight: 600;">Store Address:</span>
+      <span id="pharmacy-display-address" style="color: var(--text-main); margin-left: 4px;">-</span>
+    </div>
+    <div>
+      <span style="color: #0f766e; font-weight: 600;">Store Coordinates:</span>
+      <span id="pharmacy-display-coords" class="badge badge-neutral" style="margin-left: 4px;">-</span>
+    </div>
+  </div>
+</div>
+
+<!-- Nearby Incoming Requests Feed Card -->
+<div class="card">
+  <div class="card-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h3 class="card-title" style="margin-bottom: 0;">Incoming Patient Requests Within Your Radius</h3>
+      <span id="feed-count-badge" class="badge badge-some">0 Active</span>
+    </div>
+    <button onclick="loadPharmacyFeed()" class="btn btn-sm btn-outline">🔄 Refresh Feed</button>
+  </div>
+
+  <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 16px;">
+    These requests were placed by patients within their search distance of your store coordinates. Check your shelves and reply with availability.
+  </p>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Req ID</th>
+          <th>Patient</th>
+          <th>Type</th>
+          <th>Prescription / Medicine</th>
+          <th>Distance</th>
+          <th>Your Status</th>
+          <th>Time</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="pharmacy-feed-tbody">
+        <!-- Injected dynamically by pharmacy.js -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="no-feed-message" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">📡</div>
+    <h4>No active patient requests in your vicinity</h4>
+    <p class="text-muted">When patients within your geographic radius submit prescriptions or medicine queries, they will appear here automatically.</p>
+  </div>
+</div>
+
+<!-- Modal: Submit Availability Response -->
+<div id="pharmacy-response-modal-backdrop" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-pharm-req-title" class="card-title" style="font-size: 1.15rem;">Respond to Request</h3>
+      <button type="button" class="close-btn" onclick="closePharmacyModal()">&times;</button>
+    </div>
+    <form id="form-submit-pharmacy-response">
+      <div class="modal-body">
+        <input type="hidden" id="response-req-id">
+        <div id="modal-pharm-req-details"></div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label" style="margin-bottom: 10px;">Select Medicine Availability *</label>
+          
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; background: var(--bg-surface);">
+              <input type="radio" name="availability_status" value="all_available" required>
+              <div>
+                <strong style="color: var(--success);">1. All Medicines Available</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Full prescription or requested medicine is in stock.</p>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; background: var(--bg-surface);">
+              <input type="radio" name="availability_status" value="some_available" required>
+              <div>
+                <strong style="color: var(--secondary);">2. Some Medicines Available</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Partial stock available. Specify items or alternates in the notes below.</p>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); cursor: pointer; background: var(--bg-surface);">
+              <input type="radio" name="availability_status" value="not_available" required>
+              <div>
+                <strong style="color: var(--danger);">3. Nothing Available</strong>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Currently out of stock.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label" for="response-notes">Optional Notes / Alternate Brand Info</label>
+          <textarea id="response-notes" class="form-control" rows="2" placeholder="e.g. 10 tablets available; store closes at 10 PM."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closePharmacyModal()">Cancel</button>
+        <button type="submit" id="btn-save-response" class="btn btn-primary">
+          Submit Availability Response
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pharmacy.js') }}"></script>
+{% endblock %}

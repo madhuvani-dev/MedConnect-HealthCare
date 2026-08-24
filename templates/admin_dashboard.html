@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Control Panel - MedConnect{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+  <div>
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--text-main);">
+      Drug Control & Verification Admin Panel
+    </h1>
+    <p class="text-muted" style="font-size: 0.95rem;">
+      Audit pharmacy license credentials, authorize store registrations, and monitor patient requests.
+    </p>
+  </div>
+  <button onclick="initAdminDashboard()" class="btn btn-outline">🔄 Refresh Platform Data</button>
+</div>
+
+<!-- Platform Statistics Grid -->
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-value" id="stat-pending-pharmacies" style="color: var(--warning);">0</div>
+    <div class="stat-label">Pending Verification</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="stat-approved-pharmacies" style="color: var(--success);">0</div>
+    <div class="stat-label">Verified Pharmacies</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="stat-total-patients">0</div>
+    <div class="stat-label">Registered Patients</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="stat-total-requests" style="color: var(--secondary);">0</div>
+    <div class="stat-label">Total Patient Requests</div>
+  </div>
+</div>
+
+<!-- Pending Pharmacy Approvals Queue -->
+<div class="card" style="border-top: 4px solid var(--warning);">
+  <div class="card-header">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <h3 class="card-title" style="margin-bottom: 0;">Pending Pharmacy Registrations (Verification Required)</h3>
+      <span class="badge badge-pending">Needs Action</span>
+    </div>
+  </div>
+
+  <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 16px;">
+    Review the Drug License (DL) numbers submitted by applicants before granting access to fulfill patient prescriptions.
+  </p>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pharmacy Store</th>
+          <th>Owner / Licensee</th>
+          <th>Drug License (DL) No</th>
+          <th>Address & Coordinates</th>
+          <th>Contact Info</th>
+          <th>Status</th>
+          <th>Decision</th>
+        </tr>
+      </thead>
+      <tbody id="pending-pharmacies-tbody">
+        <!-- Injected by admin.js -->
+      </tbody>
+    </table>
+  </div>
+
+  <div id="no-pending-message" class="empty-state" style="display: none;">
+    <div class="empty-state-icon">✅</div>
+    <h4>No pending pharmacy registrations</h4>
+    <p class="text-muted">All pharmacy accounts have been reviewed and processed.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- All Pharmacies Registry -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">All Pharmacies Directory</h3>
+    </div>
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Store Name</th>
+            <th>Owner</th>
+            <th>DL Number</th>
+            <th>Phone</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="all-pharmacies-tbody">
+          <!-- Injected by admin.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- All Users Directory -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Registered Users & Patients</h3>
+    </div>
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th>Coordinates</th>
+          </tr>
+        </thead>
+        <tbody id="all-users-tbody">
+          <!-- Injected by admin.js -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

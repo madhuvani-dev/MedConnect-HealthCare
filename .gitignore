@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite Database (Contains personal/sensitive data)
+medconnect.db
+*.db
+*.sqlite3
+
+# Uploads directory protection (Ignore user-uploaded files, preserve structure)
+uploads/*
+!uploads/.gitkeep
+uploads/prescriptions/*
+!uploads/prescriptions/.gitkeep
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# AI Studio / Node build artifacts (if present)
+node_modules/
+dist/
+*.log
+

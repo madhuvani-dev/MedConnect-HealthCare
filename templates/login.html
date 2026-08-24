@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Login - MedConnect{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 20px auto;">
+  <div class="card">
+    <div class="card-header" style="text-align: center; display: block; border-bottom: none; padding-bottom: 0;">
+      <h2 class="card-title" style="font-size: 1.5rem;">MedConnect</h2>
+      <p class="text-muted" style="font-size: 0.9rem; margin-top: 4px;">
+        Smart Healthcare & Medicine Availability Management
+      </p>
+    </div>
+
+    <!-- Alert Box for feedback -->
+    <div id="login-alert" class="alert" style="display: none; margin-top: 16px;"></div>
+
+    <form id="form-login" onsubmit="return false;" style="margin-top: 20px;">
+      <div class="form-group">
+        <label class="form-label" for="login-email">Email</label>
+        <input type="email" id="login-email" class="form-control" placeholder="name@example.com" required autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-password">Password</label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">
+        Login
+      </button>
+    </form>
+
+    <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color); text-align: center;">
+      <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 12px;">New to MedConnect?</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <a href="{{ url_for('register_page') }}?role=patient" class="btn btn-sm btn-outline" style="flex: 1;">
+          👤 Register as Patient
+        </a>
+        <a href="{{ url_for('register_page') }}?role=pharmacy" class="btn btn-sm btn-outline" style="flex: 1;">
+          💊 Register as Pharmacy
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
