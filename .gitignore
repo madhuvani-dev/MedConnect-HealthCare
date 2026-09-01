@@ -51,4 +51,5 @@ Thumbs.db
 node_modules/
 dist/
 *.log
-
+# Local/demo data
+medconnect_data.json

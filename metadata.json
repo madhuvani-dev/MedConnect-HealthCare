@@ -1,6 +1,0 @@
-{
-  "name": "MedConnect",
-  "description": "A college final-year project connecting patients with nearby verified pharmacies for prescription and medicine availability requests.",
-  "requestFramePermissions": ["geolocation"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
