@@ -32,6 +32,33 @@
             {% elif session.get('role') == 'admin' %}
               <li><a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin Panel</a></li>
             {% endif %}
+            
+            <!-- Notification Bell Component -->
+            <li class="nav-notif-item">
+              <button id="nav-notif-btn" class="nav-notif-btn" type="button" title="Notifications" aria-label="Notifications" aria-expanded="false">
+                <span class="nav-notif-bell-icon">🔔</span>
+                <span id="nav-notif-badge" class="nav-notif-badge" style="display: none;">0</span>
+              </button>
+
+              <div id="nav-notif-dropdown" class="nav-notif-dropdown" style="display: none;">
+                <div class="nav-notif-header">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="nav-notif-header-title">Notifications</span>
+                    <span id="nav-notif-header-badge" class="badge badge-primary" style="font-size: 0.72rem; padding: 2px 7px;">0 new</span>
+                  </div>
+                  <button id="nav-notif-mark-all-btn" class="btn-link-sm" type="button">Mark all read</button>
+                </div>
+                
+                <div id="nav-notif-list" class="nav-notif-list">
+                  <div class="nav-notif-empty-state">Loading notifications...</div>
+                </div>
+
+                <div class="nav-notif-footer">
+                  <a href="{{ url_for('notifications_page') }}" class="nav-notif-view-all">View all notifications &rarr;</a>
+                </div>
+              </div>
+            </li>
+
             <li>
               <button class="btn btn-sm btn-secondary btn-logout">Logout ({{ session.get('name') }})</button>
             </li>
@@ -63,6 +90,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Reusable JS Scripts -->
   <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  {% if session.get('user_id') %}
+  <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

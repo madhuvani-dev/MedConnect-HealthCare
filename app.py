@@ -3,17 +3,21 @@ import argparse
 from flask import Flask, render_template, session, redirect, url_for
 
 from db import init_db
-from utils import role_required, UPLOAD_FOLDER
+from utils import role_required, login_required, UPLOAD_FOLDER
 from routes.auth import auth_bp
 from routes.patient import patient_bp
 from routes.pharmacy import pharmacy_bp
 from routes.admin import admin_bp
+from routes.notifications import notifications_bp
 
 # 1. Create the Flask app
 app = Flask(__name__)
 
 # 2. Set the secret key
-app.secret_key = os.environ.get('SECRET_KEY', 'medconnect-secret-session-key-dev-12345')
+secret_key = os.environ.get('SECRET_KEY')
+if not secret_key:
+    raise RuntimeError("SECRET_KEY environment variable is required.")
+app.secret_key = secret_key
 
 # 3. Create the uploads directory
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -22,11 +26,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 with app.app_context():
     init_db()
 
-# 5. Register the four Blueprints
+# 5. Register the Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(patient_bp)
 app.register_blueprint(pharmacy_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(notifications_bp)
 
 # 6. HTML Page Routes
 @app.route('/')
@@ -76,6 +81,13 @@ def pharmacy_dashboard():
 def admin_dashboard():
     """Admin Dashboard for reviewing pending pharmacy registrations and system activity."""
     return render_template('admin_dashboard.html')
+
+
+@app.route('/notifications')
+@login_required
+def notifications_page():
+    """Dedicated Notifications Page showing all user alerts and history."""
+    return render_template('notifications.html')
 
 
 # 7. Start the Flask server

@@ -173,12 +173,15 @@ Copy `.env.example` to create your local `.env` file:
 cp .env.example .env
 ```
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `SECRET_KEY` | Flask cryptographic session key | `medconnect-secret-session-key-dev-12345` |
-| `PORT` | Local server port to bind | `5000` (or `3000` in container) |
-| `HOST` | Local host interface | `0.0.0.0` or `127.0.0.1` |
-| `FLASK_ENV` | Flask environment mode | `development` |
+| Variable | Description | Required | Example |
+| :--- | :--- | :--- | :--- |
+| `SECRET_KEY` | Flask cryptographic session key | **Yes** | `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `ADMIN_EMAIL` | Administrator account email for initial setup | Optional | `admin@example.com` |
+| `ADMIN_PASSWORD` | Administrator account password for initial setup | Optional | Set a strong password |
+| `PORT` | Local server port to bind | Optional | `5000` |
+| `HOST` | Local host interface | Optional | `127.0.0.1` |
+| `FLASK_ENV` | Flask environment mode | Optional | `development` |
+| `FLASK_DEBUG` | Flask debug mode (1 or 0) | Optional | `1` |
 
 ---
 
@@ -190,9 +193,7 @@ MedConnect utilizes an embedded **SQLite 3** database (`medconnect.db`).
   2. `pharmacies` (Store details, Drug License number, approval status)
   3. `requests` (Medicine inquiries and prescription links)
   4. `responses` (Pharmacy stock status and notes)
-- A default System Administrator account is automatically provisioned if no admin exists:
-  - **Email**: `admin@medconnect.local`
-  - **Password**: `admin123` *(change in production)*
+- If `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables are provided, an initial Administrator account is provisioned securely during database initialization. If these variables are not provided, no default admin is created.
 
 ---
 

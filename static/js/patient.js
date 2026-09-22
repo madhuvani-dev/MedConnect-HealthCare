@@ -36,21 +36,210 @@ async function initPatientDashboard() {
   // 1. Load patient profile & coordinates
   await loadPatientProfile();
 
+  // 1b. Load SMS notification preference
+  await loadSMSPreferences();
+
+  // 1c. Load In-App Notifications & bell count
+  await loadPatientInAppNotifications();
+
   // 2. Setup request creation forms
   setupRequestForms();
 
   // 3. Load existing requests
   await loadPatientRequests();
 
-  // 4. Periodically refresh requests every 10 seconds
+  // 4. Check if request_id query parameter is present in URL (e.g. clicked from notification)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetReqId = urlParams.get('request_id');
+    if (targetReqId) {
+      const parsedId = parseInt(targetReqId, 10);
+      if (!isNaN(parsedId)) {
+        setTimeout(() => {
+          viewResponsesModal(parsedId);
+        }, 300);
+      }
+    }
+  } catch (e) {
+    console.warn('Error parsing request_id from URL:', e);
+  }
+
+  // 5. Periodically refresh requests and notifications every 10 seconds
   setInterval(async () => {
     await loadPatientRequests();
+    await loadPatientInAppNotifications();
+    if (typeof window.fetchUnreadCount === 'function') {
+      await window.fetchUnreadCount();
+    }
     // If modal is currently open, refresh the modal view to show any new responses in real time
     if (currentViewingReqId) {
       await refreshResponsesModalSilently(currentViewingReqId);
     }
   }, 10000);
 }
+
+/**
+ * Fetches notifications and unread count for patient dashboard,
+ * updates the notification bell badge, and renders dashboard in-app alerts.
+ */
+async function loadPatientInAppNotifications() {
+  try {
+    const [notifRes, countRes] = await Promise.all([
+      fetch('/api/notifications?limit=10'),
+      fetch('/api/notifications/unread-count')
+    ]);
+
+    let notifications = [];
+    let unreadCount = 0;
+
+    if (countRes.ok) {
+      const countData = await countRes.json();
+      unreadCount = countData.unread_count || 0;
+    }
+
+    if (notifRes.ok) {
+      const notifData = await notifRes.json();
+      notifications = notifData.notifications || [];
+      if (typeof notifData.unread_count !== 'undefined') {
+        unreadCount = notifData.unread_count;
+      }
+    }
+
+    // Update navigation bell UI
+    if (typeof window.updateNotificationBadge === 'function') {
+      window.updateNotificationBadge(unreadCount);
+    } else {
+      const bellBadge = document.getElementById('nav-notif-badge');
+      if (bellBadge) {
+        if (unreadCount > 0) {
+          bellBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          bellBadge.style.display = 'flex';
+        } else {
+          bellBadge.style.display = 'none';
+        }
+      }
+    }
+
+    // Render in-app notifications on the patient dashboard
+    renderPatientDashboardNotifications(notifications);
+  } catch (err) {
+    console.warn('[Patient Notifications] Failed to load:', err);
+  }
+}
+
+/**
+ * Renders patient dashboard notification banner/cards
+ */
+function renderPatientDashboardNotifications(notifications) {
+  const container = document.getElementById('patient-dashboard-notifications');
+  if (!container) return;
+
+  const unreadList = (notifications || []).filter(n => !n.is_read);
+
+  if (unreadList.length === 0) {
+    container.innerHTML = '';
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="background: linear-gradient(135deg, rgba(30, 77, 43, 0.08), rgba(46, 117, 89, 0.12)); border: 1.5px solid var(--primary-color, #1e4d2b); border-radius: 12px; padding: 16px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.25rem;">🔔</span>
+          <strong style="color: var(--text-main, #1c2833); font-size: 1.05rem;">
+            New Pharmacy Availability ${unreadList.length > 1 ? `(${unreadList.length} updates)` : 'Update'}
+          </strong>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="dismissAllPatientDashboardNotifs()" type="button" style="font-size: 0.8rem; padding: 4px 10px;">
+          ✓ Mark all read
+        </button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${unreadList.map(notif => {
+          const isUnavailable = notif.title.includes('Unavailable');
+          const isPartial = notif.title.includes('Partially');
+          const badgeClass = isUnavailable ? 'badge-rejected' : (isPartial ? 'badge-warning' : 'badge-approved');
+          const icon = isUnavailable ? '✕' : (isPartial ? '⚠️' : '✓');
+
+          return `
+            <div class="patient-notif-card" style="background: var(--bg-card, #ffffff); border-radius: 8px; padding: 12px 16px; border: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div style="flex: 1; min-width: 240px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span class="badge ${badgeClass}" style="font-size: 0.75rem;">
+                    ${icon} ${escapeHtml(notif.title)}
+                  </span>
+                  <small class="text-muted">${formatPatientNotifTime(notif.created_at)}</small>
+                </div>
+                <p style="margin: 0; font-size: 0.9rem; color: var(--text-main, #1c2833);">${escapeHtml(notif.message)}</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                ${notif.related_request_id ? `
+                  <button class="btn btn-sm btn-primary" onclick="viewResponsesModal(${notif.related_request_id}); markPatientNotifRead(${notif.id});" type="button">
+                    View Pharmacy Responses &rarr;
+                  </button>
+                ` : ''}
+                <button class="btn btn-sm btn-secondary" onclick="markPatientNotifRead(${notif.id})" type="button">
+                  ✓ Dismiss
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function formatPatientNotifTime(dateString) {
+  if (!dateString) return '';
+  let isoString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return dateString;
+  const now = new Date();
+  const diffSecs = Math.floor((now - date) / 1000);
+  if (diffSecs < 60) return 'Just now';
+  if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
+  if (diffSecs < 86400) return `${Math.floor(diffSecs / 3600)}h ago`;
+  return 'Yesterday';
+}
+
+async function markPatientNotifRead(notifId) {
+  try {
+    if (typeof window.markSingleNotificationRead === 'function') {
+      await window.markSingleNotificationRead(notifId);
+    } else {
+      await fetch(`/api/notifications/${notifId}/read`, { method: 'POST' });
+    }
+    await loadPatientInAppNotifications();
+  } catch (e) {
+    console.error('Error marking notification read:', e);
+  }
+}
+
+async function dismissAllPatientDashboardNotifs() {
+  try {
+    if (typeof window.markAllNotificationsAsRead === 'function') {
+      await window.markAllNotificationsAsRead();
+    } else {
+      await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+    }
+    await loadPatientInAppNotifications();
+  } catch (e) {
+    console.error('Error marking all notifications read:', e);
+  }
+}
+
+window.loadPatientInAppNotifications = loadPatientInAppNotifications;
+window.markPatientNotifRead = markPatientNotifRead;
+window.dismissAllPatientDashboardNotifs = dismissAllPatientDashboardNotifs;
+
+window.addEventListener('medconnect:notifications-updated', (event) => {
+  if (event.detail && event.detail.notifications) {
+    renderPatientDashboardNotifications(event.detail.notifications);
+  }
+});
 
 /* =========================================================
    GEOCODING & REVERSE GEOCODING HELPERS
@@ -185,6 +374,72 @@ function showLocationPrompt() {
     locAddress.textContent = 'No location registered yet. Click "Update Location" to choose your area.';
   }
 }
+
+/* =========================================================
+   SMS NOTIFICATION PREFERENCES
+   ========================================================= */
+
+async function loadSMSPreferences() {
+  try {
+    const res = await fetch('/api/patient/preferences');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const toggle = document.getElementById('toggle-sms-notifications');
+    const label = document.getElementById('sms-pref-status-label');
+    const maskedPhone = document.getElementById('sms-pref-masked-phone');
+
+    if (toggle) {
+      toggle.checked = Boolean(data.sms_notifications_enabled);
+    }
+    if (label) {
+      if (data.sms_notifications_enabled) {
+        label.textContent = 'ON';
+        label.style.background = '#dcfce7';
+        label.style.color = '#166534';
+      } else {
+        label.textContent = 'OFF';
+        label.style.background = '#fee2e2';
+        label.style.color = '#991b1b';
+      }
+    }
+    if (maskedPhone) {
+      maskedPhone.textContent = data.phone_masked || (data.phone_registered ? 'Registered' : 'Not registered');
+    }
+  } catch (e) {
+    console.warn('Failed to load SMS preferences:', e);
+  }
+}
+
+async function toggleSMSPreference(enabled) {
+  const label = document.getElementById('sms-pref-status-label');
+  const toggle = document.getElementById('toggle-sms-notifications');
+
+  if (label) {
+    label.textContent = enabled ? 'ON' : 'OFF';
+    label.style.background = enabled ? '#dcfce7' : '#fee2e2';
+    label.style.color = enabled ? '#166534' : '#991b1b';
+  }
+
+  try {
+    const res = await fetch('/api/patient/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sms_enabled: enabled })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Failed to update SMS preference.');
+      if (toggle) toggle.checked = !enabled;
+      if (label) label.textContent = !enabled ? 'ON' : 'OFF';
+    }
+  } catch (e) {
+    console.error('Error updating SMS preference:', e);
+    if (toggle) toggle.checked = !enabled;
+    if (label) label.textContent = !enabled ? 'ON' : 'OFF';
+  }
+}
+window.toggleSMSPreference = toggleSMSPreference;
 
 /* =========================================================
    UPDATE LOCATION MODAL
@@ -913,10 +1168,7 @@ async function viewResponsesModal(reqId) {
     `;
   }
 }
-
-/**
- * Silently refreshes the modal if it is already open (called by background interval)
- */
+window.viewResponsesModal = viewResponsesModal;
 async function refreshResponsesModalSilently(reqId) {
   const modalBackdrop = document.getElementById('responses-modal-backdrop');
   if (!modalBackdrop || !modalBackdrop.classList.contains('open')) return;

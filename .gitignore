@@ -1,6 +1,24 @@
-# Python
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite Database & Data files (Contains personal/sensitive data)
+medconnect.db
+medconnect_data.json
+*.db
+*.sqlite3
+
+# Uploads directory protection (Ignore user-uploaded files, preserve structure)
+uploads/*
+!uploads/.gitkeep
+uploads/prescriptions/*
+!uploads/prescriptions/.gitkeep
+
+# Python & Virtual Environments
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 *.so
 .Python
@@ -24,26 +42,11 @@ wheels/
 .installed.cfg
 *.egg
 
-# Environment Variables & Secrets
-.env
-.env.*
-!.env.example
-
-# Local SQLite Database (Contains personal/sensitive data)
-medconnect.db
-*.db
-*.sqlite3
-
-# Uploads directory protection (Ignore user-uploaded files, preserve structure)
-uploads/*
-!uploads/.gitkeep
-uploads/prescriptions/*
-!uploads/prescriptions/.gitkeep
-
 # Operating System & IDE
 .DS_Store
 Thumbs.db
 .idea/
+.vscode/
 *.swp
 *.swo
 
@@ -51,5 +54,3 @@ Thumbs.db
 node_modules/
 dist/
 *.log
-# Local/demo data
-medconnect_data.json

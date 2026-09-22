@@ -73,44 +73,81 @@ def get_pharmacy_feed():
 
 
 @pharmacy_bp.route('/api/pharmacy/responses', methods=['POST'])
+@pharmacy_bp.route('/api/pharmacy/requests/<int:url_req_id>/respond', methods=['POST'])
+@pharmacy_bp.route('/api/pharmacy/requests/<int:url_req_id>/responses', methods=['POST'])
 @role_required('pharmacy')
-def submit_pharmacy_response():
+def submit_pharmacy_response(url_req_id=None):
     """
     Submits or updates an availability response for an active patient request.
-    Availability options: 'all_available', 'some_available', 'not_available'.
+    Availability options:
+      - 'all_available' / 'available'
+      - 'some_available' / 'partially_available'
+      - 'not_available' / 'unavailable'
     """
+    print("PHARMACY RESPONSE START")
+
     pharmacy_id = session.get('pharmacy_id')
     data = request.get_json() or {}
-    req_id = data.get('request_id')
-    availability = data.get('availability_status')
-    notes = data.get('notes', '').strip()
+    req_id = url_req_id or data.get('request_id') or data.get('req_id')
+    raw_availability = data.get('availability_status') or data.get('availability') or data.get('status')
+    notes = (data.get('notes') or '').strip()
 
-    if not req_id or not availability:
+    if not req_id or not raw_availability:
         return jsonify({'error': 'Request ID and availability status are required.'}), 400
 
-    if availability not in ('all_available', 'some_available', 'not_available'):
+    print(f"REQUEST ID: {req_id}")
+
+    # Normalize availability input and map to database status and required notification text
+    avail_str = str(raw_availability).strip().lower()
+    if avail_str in ('all_available', 'available', 'all'):
+        availability = 'all_available'
+        notif_title = "Medicine Available"
+        notif_message = "The pharmacy has responded to your medicine request. The requested medicine is available."
+    elif avail_str in ('some_available', 'partially_available', 'partial', 'some'):
+        availability = 'some_available'
+        notif_title = "Medicine Partially Available"
+        notif_message = "The pharmacy has responded to your medicine request. Some of the requested medicine is available."
+    elif avail_str in ('not_available', 'unavailable', 'none', 'out_of_stock'):
+        availability = 'not_available'
+        notif_title = "Medicine Unavailable"
+        notif_message = "The pharmacy has responded to your medicine request. The requested medicine is currently unavailable."
+    else:
         return jsonify({'error': 'Invalid availability status.'}), 400
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get pharmacy coords
-    cursor.execute("SELECT latitude, longitude FROM pharmacies WHERE id = ?;", (pharmacy_id,))
-    pharmacy = cursor.fetchone()
-
-    # Get request coords
-    cursor.execute("SELECT id, patient_lat, patient_lng, status FROM requests WHERE id = ?;", (req_id,))
-    req = cursor.fetchone()
-
-    if not req or req['status'] != 'active':
-        conn.close()
-        return jsonify({'error': 'Request not found or no longer active.'}), 404
-
-    # Calculate distance
-    dist = calculate_haversine_distance(pharmacy['latitude'], pharmacy['longitude'], req['patient_lat'], req['patient_lng'])
-
     try:
-        # Insert or update response
+        # Resolve pharmacy_id if missing from session
+        if not pharmacy_id:
+            cursor.execute("SELECT id FROM pharmacies WHERE user_id = ?;", (session.get('user_id'),))
+            pharm_row = cursor.fetchone()
+            if pharm_row:
+                pharmacy_id = pharm_row['id']
+                session['pharmacy_id'] = pharmacy_id
+
+        # Get pharmacy details
+        cursor.execute("SELECT id, pharmacy_name, latitude, longitude FROM pharmacies WHERE id = ?;", (pharmacy_id,))
+        pharmacy = cursor.fetchone()
+        if not pharmacy:
+            conn.close()
+            return jsonify({'error': 'Pharmacy profile record not found.'}), 404
+
+        # Validate the request and identify the patient who originally submitted the request
+        cursor.execute("SELECT id, patient_id, patient_lat, patient_lng, status FROM requests WHERE id = ?;", (req_id,))
+        req = cursor.fetchone()
+
+        if not req or req['status'] != 'active':
+            conn.close()
+            return jsonify({'error': 'Request not found or no longer active.'}), 404
+
+        patient_id = req['patient_id']
+        print(f"PATIENT ID: {patient_id}")
+
+        # Calculate distance
+        dist = calculate_haversine_distance(pharmacy['latitude'], pharmacy['longitude'], req['patient_lat'], req['patient_lng'])
+
+        # Save/update the pharmacy availability response in the database
         cursor.execute("""
             INSERT INTO responses (request_id, pharmacy_id, availability_status, notes, distance_km)
             VALUES (?, ?, ?, ?, ?)
@@ -121,16 +158,48 @@ def submit_pharmacy_response():
                 created_at = CURRENT_TIMESTAMP;
         """, (req_id, pharmacy_id, availability, notes, dist))
 
+        # Confirm the database operation succeeded
         conn.commit()
+        print("RESPONSE SAVED")
+
+        # Create notification for the identified patient
+        print("NOTIFICATION CREATION START")
+        cursor.execute("""
+            INSERT INTO notifications (user_id, title, message, type, related_request_id, is_read)
+            VALUES (?, ?, ?, 'request_response', ?, 0);
+        """, (patient_id, notif_title, notif_message, req_id))
+        conn.commit()
+        notif_id = cursor.lastrowid
         conn.close()
+        print(f"NOTIFICATION CREATED: {notif_id}")
+
+        # Step 7-10: Send SMS to the patient safely without breaking pharmacy response
+        try:
+            from sms_service import send_patient_response_sms
+            send_patient_response_sms(
+                request_id=req_id,
+                pharmacy_id=pharmacy_id,
+                availability_status=availability,
+                notification_id=notif_id
+            )
+        except Exception as sms_err:
+            print(f"SMS notification failed: {sms_err}")
 
         status_text = "All medicines available" if availability == 'all_available' else ("Some medicines available" if availability == 'some_available' else "Not available")
+
+        print("PHARMACY RESPONSE COMPLETE")
+
         return jsonify({
             'message': f'Response submitted successfully: "{status_text}"',
-            'distance_km': dist
+            'distance_km': dist,
+            'availability_status': availability,
+            'request_id': req_id
         }), 200
+
     except Exception as e:
+        conn.rollback()
         conn.close()
+        print(f"[Error] Failed in submit_pharmacy_response: {e}")
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
 

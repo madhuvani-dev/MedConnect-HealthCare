@@ -55,6 +55,13 @@ def approve_pharmacy(pharm_id):
     conn.commit()
     conn.close()
 
+    # Notify the pharmacy about approval
+    try:
+        from notifications_service import notify_pharmacy_status_update
+        notify_pharmacy_status_update(pharm_id, 'approved', pharm['pharmacy_name'])
+    except Exception as err:
+        print(f"[Warning] Failed to send pharmacy approval notification: {err}")
+
     return jsonify({'message': f'Pharmacy "{pharm["pharmacy_name"]}" has been approved successfully.'}), 200
 
 
@@ -76,6 +83,13 @@ def reject_pharmacy(pharm_id):
     cursor.execute("UPDATE pharmacies SET status = 'rejected' WHERE id = ?;", (pharm_id,))
     conn.commit()
     conn.close()
+
+    # Notify the pharmacy about rejection
+    try:
+        from notifications_service import notify_pharmacy_status_update
+        notify_pharmacy_status_update(pharm_id, 'rejected', pharm['pharmacy_name'])
+    except Exception as err:
+        print(f"[Warning] Failed to send pharmacy rejection notification: {err}")
 
     return jsonify({'message': f'Pharmacy "{pharm["pharmacy_name"]}" registration was rejected.'}), 200
 

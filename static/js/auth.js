@@ -669,6 +669,26 @@
       }
 
       loginForm.addEventListener('submit', handleLoginSubmission);
+
+      // Quick Demo Credentials Buttons
+      const demoBtns = document.querySelectorAll('.demo-login-btn');
+      demoBtns.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const email = btn.getAttribute('data-email') || '';
+          const password = btn.getAttribute('data-password') || '';
+          const emailInput = document.getElementById('login-email');
+          const passwordInput = document.getElementById('login-password');
+          if (emailInput && passwordInput) {
+            emailInput.value = email;
+            passwordInput.value = password;
+            const alertBox = document.getElementById('login-alert');
+            if (alertBox) {
+              showFormAlert(alertBox, `Filled credentials for ${btn.textContent.trim()} account. Click "Login" to proceed.`, 'info');
+            }
+          }
+        });
+      });
     }
   }
 

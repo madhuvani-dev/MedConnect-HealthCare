@@ -88,8 +88,6 @@ def role_required(required_role):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print(f"[ROLE_CHECK] required_role={required_role}, user_id={session.get('user_id')}, role={session.get('role')}, pharmacy_id={session.get('pharmacy_id')}, pharmacy_status={session.get('pharmacy_status')}")
-
             if 'user_id' not in session:
                 if request.path.startswith('/api/'):
                     return jsonify({'error': 'Unauthorized. Please log in.'}), 401
@@ -112,3 +110,22 @@ def role_required(required_role):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def clean_config_val(val, key_name=None):
+    """
+    Cleans an environment variable string by stripping outer quotes,
+    whitespace, and accidental key-name prefixes (e.g. 'ADMIN_EMAIL=admin@example.com').
+    """
+    if not val:
+        return ""
+    val = str(val).strip()
+    # Strip quotes if wrapped
+    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+        val = val[1:-1].strip()
+    if key_name:
+        key_prefix = key_name.lower() + "="
+        while val.lower().startswith(key_prefix):
+            val = val[len(key_prefix):].strip()
+            if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                val = val[1:-1].strip()
+    return val

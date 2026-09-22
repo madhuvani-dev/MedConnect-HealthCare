@@ -1,8 +1,8 @@
 -- MedConnect SQLite Database Schema
--- Exactly 4 Tables: users, pharmacies, requests, responses
+-- Tables: users, pharmacies, requests, responses, notifications, sms_notifications
 
 -- 1. Users Table (Patients, Pharmacy accounts, Admins)
--- Stores credentials, role, and patient coordinates
+-- Stores credentials, role, coordinates, and notification preferences
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT NOT NULL CHECK(role IN ('patient', 'pharmacy', 'admin')),
     latitude REAL,          -- Patient latitude coordinate
     longitude REAL,         -- Patient longitude coordinate
+    sms_enabled INTEGER NOT NULL DEFAULT 1 CHECK(sms_enabled IN (0, 1)), -- SMS notification preference (1=ON, 0=OFF)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,3 +62,48 @@ CREATE TABLE IF NOT EXISTS responses (
     FOREIGN KEY (pharmacy_id) REFERENCES pharmacies(id) ON DELETE CASCADE,
     UNIQUE(request_id, pharmacy_id)  -- One response per pharmacy per request
 );
+
+-- 5. Notifications Table
+-- Stores user notifications for Patients, Pharmacies, and Admins
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    related_request_id INTEGER,
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (related_request_id) REFERENCES requests(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_time ON notifications(user_id, created_at DESC);
+
+-- 6. SMS Notifications Table
+-- Tracks SMS delivery attempts, statuses, masked numbers, and provider message IDs
+CREATE TABLE IF NOT EXISTS sms_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id INTEGER,
+    notification_id INTEGER,
+    patient_id INTEGER NOT NULL,
+    pharmacy_id INTEGER,
+    phone_masked TEXT,
+    phone_hash TEXT,
+    message_type TEXT NOT NULL,
+    message_body TEXT,
+    provider TEXT,
+    provider_message_id TEXT,
+    status TEXT NOT NULL CHECK(status IN ('pending', 'sent', 'failed', 'skipped')),
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sent_at TIMESTAMP,
+    FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE SET NULL,
+    FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sms_notif_dedup ON sms_notifications(request_id, pharmacy_id, message_type, status);
+CREATE INDEX IF NOT EXISTS idx_sms_notif_patient ON sms_notifications(patient_id, created_at DESC);
+

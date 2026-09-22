@@ -110,9 +110,24 @@ def create_patient_request():
     new_request_id = cursor.lastrowid
     conn.close()
 
+    # Trigger notifications to nearby approved pharmacies within 5.0 km
+    try:
+        from notifications_service import notify_nearby_pharmacies_for_request
+        notify_nearby_pharmacies_for_request(
+            request_id=new_request_id,
+            req_type=req_type,
+            medicine_name=medicine_name,
+            patient_lat=req_lat,
+            patient_lng=req_lng,
+            radius_km=5.0
+        )
+    except Exception as err:
+        print(f"[Warning] Failed to notify nearby pharmacies: {err}")
+
     return jsonify({
         'message': 'Request submitted successfully to verified pharmacies within 5 km radius!',
-        'request_id': new_request_id
+        'request_id': new_request_id,
+        'request': {'id': new_request_id}
     }), 201
 
 
@@ -248,7 +263,7 @@ def expand_request_radius(req_id):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, search_radius_km, status FROM requests WHERE id = ? AND patient_id = ?;", (req_id, patient_id))
+    cursor.execute("SELECT id, search_radius_km, status, request_type, medicine_name, patient_lat, patient_lng FROM requests WHERE id = ? AND patient_id = ?;", (req_id, patient_id))
     req = cursor.fetchone()
 
     if not req:
@@ -265,6 +280,27 @@ def expand_request_radius(req_id):
     cursor.execute("UPDATE requests SET search_radius_km = ? WHERE id = ?;", (new_radius, req_id))
     conn.commit()
     conn.close()
+
+    # Trigger notifications for patient and newly reachable pharmacies
+    try:
+        from notifications_service import create_notification, notify_nearby_pharmacies_for_request
+        create_notification(
+            user_id=patient_id,
+            title="Search Radius Expanded",
+            message=f"Search radius for request #{req_id} expanded from {current_radius} km to {new_radius} km. More nearby pharmacies are being notified.",
+            notif_type='request_status',
+            related_request_id=req_id
+        )
+        notify_nearby_pharmacies_for_request(
+            request_id=req_id,
+            req_type=req['request_type'],
+            medicine_name=req['medicine_name'],
+            patient_lat=req['patient_lat'],
+            patient_lng=req['patient_lng'],
+            radius_km=new_radius
+        )
+    except Exception as err:
+        print(f"[Warning] Notification error in expand_radius: {err}")
 
     return jsonify({
         'message': f'Search radius expanded from {current_radius} km to {new_radius} km. More nearby pharmacies can now respond.',
@@ -291,4 +327,77 @@ def close_request(req_id):
     conn.commit()
     conn.close()
 
+    # Notify patient and responding pharmacies of status change
+    try:
+        from notifications_service import create_notification, notify_pharmacies_for_request_status
+        create_notification(
+            user_id=patient_id,
+            title=f"Request #{req_id} Marked {new_status.capitalize()}",
+            message=f"Your medicine request #{req_id} has been marked as {new_status}.",
+            notif_type='request_status',
+            related_request_id=req_id
+        )
+        notify_pharmacies_for_request_status(req_id, new_status)
+    except Exception as err:
+        print(f"[Warning] Notification error in close_request: {err}")
+
     return jsonify({'message': f'Request marked as {new_status}.'}), 200
+
+
+@patient_bp.route('/preferences', methods=['GET'])
+@role_required('patient')
+def get_patient_preferences():
+    """
+    Retrieves the patient's notification preferences.
+    """
+    patient_id = session['user_id']
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT phone, sms_enabled FROM users WHERE id = ?;", (patient_id,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({'error': 'Patient user not found.'}), 404
+
+    from sms_service import mask_phone_number
+    phone_val = row['phone'] if 'phone' in row.keys() else ''
+    sms_on = bool(row['sms_enabled']) if 'sms_enabled' in row.keys() else True
+
+    return jsonify({
+        'sms_notifications_enabled': sms_on,
+        'phone_registered': bool(phone_val),
+        'phone_masked': mask_phone_number(phone_val)
+    }), 200
+
+
+@patient_bp.route('/preferences', methods=['POST'])
+@role_required('patient')
+def update_patient_preferences():
+    """
+    Updates the patient's SMS notification preference (ON/OFF).
+    Existing in-app notifications remain enabled regardless of this setting.
+    """
+    data = request.get_json() or {}
+    raw_val = data.get('sms_enabled')
+    if raw_val is None:
+        raw_val = data.get('sms_notifications_enabled')
+
+    if raw_val is None:
+        return jsonify({'error': 'sms_enabled field is required (boolean true/false).'}), 400
+
+    new_val = 1 if (str(raw_val).lower() in ('true', '1', 'yes', 'on')) else 0
+
+    patient_id = session['user_id']
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET sms_enabled = ? WHERE id = ?;", (new_val, patient_id))
+    conn.commit()
+    conn.close()
+
+    status_str = "enabled" if new_val == 1 else "disabled"
+    return jsonify({
+        'message': f'SMS notifications {status_str} successfully.',
+        'sms_notifications_enabled': bool(new_val)
+    }), 200
+
