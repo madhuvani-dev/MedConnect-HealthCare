@@ -64,7 +64,8 @@ async function loadPendingPharmacies() {
       rowsHtml += `
         <tr>
           <td>
-            <strong>${escapeHtml(p.pharmacy_name)}</strong>
+            <strong>${escapeHtml(p.pharmacy_name)}</strong><br/>
+            <small class="text-muted">Registered: ${formatISTDisplay(p.created_at)}</small>
           </td>
           <td>${escapeHtml(p.owner_name)}</td>
           <td><span class="badge badge-neutral" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml(p.dl_number)}</span></td>
@@ -170,7 +171,10 @@ async function loadAllPharmacies() {
       rowsHtml += `
         <tr>
           <td>#${p.id}</td>
-          <td><strong>${escapeHtml(p.pharmacy_name)}</strong></td>
+          <td>
+            <strong>${escapeHtml(p.pharmacy_name)}</strong><br/>
+            <small class="text-muted">Registered: ${formatISTDisplay(p.created_at)}</small>
+          </td>
           <td>${escapeHtml(p.owner_name)}</td>
           <td><code>${escapeHtml(p.dl_number)}</code></td>
           <td>${escapeHtml(p.phone)}</td>
@@ -215,7 +219,10 @@ async function loadAllUsers() {
       rowsHtml += `
         <tr>
           <td>#${u.id}</td>
-          <td><strong>${escapeHtml(u.name)}</strong></td>
+          <td>
+            <strong>${escapeHtml(u.name)}</strong><br/>
+            <small class="text-muted">Registered: ${formatISTDisplay(u.created_at)}</small>
+          </td>
           <td>${escapeHtml(u.email)}</td>
           <td>${escapeHtml(u.phone)}</td>
           <td>${roleBadge}</td>
@@ -228,6 +235,11 @@ async function loadAllUsers() {
   } catch (err) {
     console.error('Error fetching users:', err);
   }
+}
+
+function formatISTDisplay(ts) {
+  if (!ts) return '<span class="text-muted">Not Set</span>';
+  return `${escapeHtml(ts)} (IST)`;
 }
 
 function escapeHtml(str) {

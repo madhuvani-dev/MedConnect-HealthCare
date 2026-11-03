@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import bcrypt
 from db import get_db
-from utils import clean_config_val
+from utils import clean_config_val, get_ist_now
 
 def verify_user_password(stored_hash, candidate_password):
     if not stored_hash or not candidate_password:
@@ -69,11 +69,12 @@ def register_patient():
         return jsonify({'error': 'Email address is already registered.'}), 409
 
     password_hash = generate_password_hash(password)
+    ist_now = get_ist_now()
     try:
         cursor.execute("""
-            INSERT INTO users (name, email, phone, password_hash, role, latitude, longitude)
-            VALUES (?, ?, ?, ?, 'patient', ?, ?);
-        """, (name, email, phone, password_hash, lat, lng))
+            INSERT INTO users (name, email, phone, password_hash, role, latitude, longitude, created_at)
+            VALUES (?, ?, ?, ?, 'patient', ?, ?, ?);
+        """, (name, email, phone, password_hash, lat, lng, ist_now))
         conn.commit()
         user_id = cursor.lastrowid
         conn.close()
@@ -142,19 +143,20 @@ def register_pharmacy():
         return jsonify({'error': 'Drug License (DL) number is already registered.'}), 409
 
     password_hash = generate_password_hash(password)
+    ist_now = get_ist_now()
     try:
-        # 1. Insert user with latitude and longitude so both users and pharmacies tables stay consistent
+        # 1. Insert user with latitude, longitude and IST timestamp so both users and pharmacies tables stay consistent
         cursor.execute("""
-            INSERT INTO users (name, email, phone, password_hash, role, latitude, longitude)
-            VALUES (?, ?, ?, ?, 'pharmacy', ?, ?);
-        """, (contact_name, email, phone, password_hash, lat, lng))
+            INSERT INTO users (name, email, phone, password_hash, role, latitude, longitude, created_at)
+            VALUES (?, ?, ?, ?, 'pharmacy', ?, ?, ?);
+        """, (contact_name, email, phone, password_hash, lat, lng, ist_now))
         user_id = cursor.lastrowid
 
-        # 2. Insert pharmacy details (default status is 'pending')
+        # 2. Insert pharmacy details with IST timestamp (default status is 'pending')
         cursor.execute("""
-            INSERT INTO pharmacies (user_id, pharmacy_name, owner_name, dl_number, address, latitude, longitude, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending');
-        """, (user_id, pharmacy_name, owner_name, dl_number, address, lat, lng))
+            INSERT INTO pharmacies (user_id, pharmacy_name, owner_name, dl_number, address, latitude, longitude, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?);
+        """, (user_id, pharmacy_name, owner_name, dl_number, address, lat, lng, ist_now))
 
         conn.commit()
         conn.close()
@@ -326,7 +328,7 @@ def get_current_user():
     pharmacy_info = None
 
     if user_dict['role'] == 'pharmacy':
-        cursor.execute("SELECT id, pharmacy_name, owner_name, dl_number, address, latitude, longitude, status FROM pharmacies WHERE user_id = ?;", (user['id'],))
+        cursor.execute("SELECT id, pharmacy_name, owner_name, dl_number, address, latitude, longitude, status, created_at FROM pharmacies WHERE user_id = ?;", (user['id'],))
         pharmacy = cursor.fetchone()
         if pharmacy:
             pharmacy_info = dict(pharmacy)

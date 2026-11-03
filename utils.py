@@ -1,9 +1,20 @@
 import math
 import os
 import uuid
+from datetime import datetime, timezone, timedelta
 from functools import wraps
 from flask import session, jsonify, redirect, url_for, request
 from werkzeug.utils import secure_filename
+
+# Indian Standard Time (IST): UTC + 05:30
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def get_ist_now() -> str:
+    """
+    Returns the current timestamp in Indian Standard Time (IST, UTC+05:30)
+    formatted as 'YYYY-MM-DD HH:MM:SS'.
+    """
+    return datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')
 
 # Allowed file extensions for prescription uploads
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'webp'}
