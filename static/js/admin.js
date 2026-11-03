@@ -70,7 +70,7 @@ async function loadPendingPharmacies() {
           <td><span class="badge badge-neutral" style="font-family: monospace; font-size: 0.9rem;">${escapeHtml(p.dl_number)}</span></td>
           <td>
             <small>${escapeHtml(p.address)}</small><br/>
-            <small class="text-muted">GPS: ${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)}</small>
+            <small class="text-muted">${(p.latitude != null && p.longitude != null && !isNaN(p.latitude) && !isNaN(p.longitude)) ? `GPS: ${parseFloat(p.latitude).toFixed(4)}, ${parseFloat(p.longitude).toFixed(4)}` : 'GPS: <span class="text-muted">Not Set</span>'}</small>
           </td>
           <td>
             ${escapeHtml(p.contact_name)}<br/>
@@ -153,7 +153,7 @@ async function loadAllPharmacies() {
     if (!tbody) return;
 
     if (!data.pharmacies || data.pharmacies.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center">No pharmacies found.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center">No pharmacies found.</td></tr>';
       return;
     }
 
@@ -163,6 +163,10 @@ async function loadAllPharmacies() {
       if (p.status === 'approved') statusBadge = '<span class="badge badge-approved">Approved</span>';
       if (p.status === 'rejected') statusBadge = '<span class="badge badge-rejected">Rejected</span>';
 
+      const loc = (p.latitude != null && p.longitude != null && !isNaN(p.latitude) && !isNaN(p.longitude))
+        ? `${parseFloat(p.latitude).toFixed(4)}, ${parseFloat(p.longitude).toFixed(4)}`
+        : '<span class="text-muted">Not Set</span>';
+
       rowsHtml += `
         <tr>
           <td>#${p.id}</td>
@@ -170,6 +174,7 @@ async function loadAllPharmacies() {
           <td>${escapeHtml(p.owner_name)}</td>
           <td><code>${escapeHtml(p.dl_number)}</code></td>
           <td>${escapeHtml(p.phone)}</td>
+          <td>${loc}</td>
           <td>${statusBadge}</td>
         </tr>
       `;
@@ -203,7 +208,7 @@ async function loadAllUsers() {
       if (u.role === 'pharmacy') roleBadge = '<span class="badge badge-some">Pharmacy</span>';
       if (u.role === 'admin') roleBadge = '<span class="badge badge-all">Admin</span>';
 
-      const loc = (u.latitude && u.longitude)
+      const loc = (u.latitude != null && u.longitude != null && !isNaN(u.latitude) && !isNaN(u.longitude))
         ? `${parseFloat(u.latitude).toFixed(4)}, ${parseFloat(u.longitude).toFixed(4)}`
         : '<span class="text-muted">Not Set</span>';
 

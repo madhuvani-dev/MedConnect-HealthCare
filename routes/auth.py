@@ -143,11 +143,11 @@ def register_pharmacy():
 
     password_hash = generate_password_hash(password)
     try:
-        # 1. Insert user
+        # 1. Insert user with latitude and longitude so both users and pharmacies tables stay consistent
         cursor.execute("""
-            INSERT INTO users (name, email, phone, password_hash, role)
-            VALUES (?, ?, ?, ?, 'pharmacy');
-        """, (contact_name, email, phone, password_hash))
+            INSERT INTO users (name, email, phone, password_hash, role, latitude, longitude)
+            VALUES (?, ?, ?, ?, 'pharmacy', ?, ?);
+        """, (contact_name, email, phone, password_hash, lat, lng))
         user_id = cursor.lastrowid
 
         # 2. Insert pharmacy details (default status is 'pending')

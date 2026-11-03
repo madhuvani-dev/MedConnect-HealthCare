@@ -36,9 +36,6 @@ async function initPatientDashboard() {
   // 1. Load patient profile & coordinates
   await loadPatientProfile();
 
-  // 1b. Load SMS notification preference
-  await loadSMSPreferences();
-
   // 1c. Load In-App Notifications & bell count
   await loadPatientInAppNotifications();
 
@@ -375,71 +372,7 @@ function showLocationPrompt() {
   }
 }
 
-/* =========================================================
-   SMS NOTIFICATION PREFERENCES
-   ========================================================= */
 
-async function loadSMSPreferences() {
-  try {
-    const res = await fetch('/api/patient/preferences');
-    if (!res.ok) return;
-    const data = await res.json();
-
-    const toggle = document.getElementById('toggle-sms-notifications');
-    const label = document.getElementById('sms-pref-status-label');
-    const maskedPhone = document.getElementById('sms-pref-masked-phone');
-
-    if (toggle) {
-      toggle.checked = Boolean(data.sms_notifications_enabled);
-    }
-    if (label) {
-      if (data.sms_notifications_enabled) {
-        label.textContent = 'ON';
-        label.style.background = '#dcfce7';
-        label.style.color = '#166534';
-      } else {
-        label.textContent = 'OFF';
-        label.style.background = '#fee2e2';
-        label.style.color = '#991b1b';
-      }
-    }
-    if (maskedPhone) {
-      maskedPhone.textContent = data.phone_masked || (data.phone_registered ? 'Registered' : 'Not registered');
-    }
-  } catch (e) {
-    console.warn('Failed to load SMS preferences:', e);
-  }
-}
-
-async function toggleSMSPreference(enabled) {
-  const label = document.getElementById('sms-pref-status-label');
-  const toggle = document.getElementById('toggle-sms-notifications');
-
-  if (label) {
-    label.textContent = enabled ? 'ON' : 'OFF';
-    label.style.background = enabled ? '#dcfce7' : '#fee2e2';
-    label.style.color = enabled ? '#166534' : '#991b1b';
-  }
-
-  try {
-    const res = await fetch('/api/patient/preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sms_enabled: enabled })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || 'Failed to update SMS preference.');
-      if (toggle) toggle.checked = !enabled;
-      if (label) label.textContent = !enabled ? 'ON' : 'OFF';
-    }
-  } catch (e) {
-    console.error('Error updating SMS preference:', e);
-    if (toggle) toggle.checked = !enabled;
-    if (label) label.textContent = !enabled ? 'ON' : 'OFF';
-  }
-}
-window.toggleSMSPreference = toggleSMSPreference;
 
 /* =========================================================
    UPDATE LOCATION MODAL

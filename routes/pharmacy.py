@@ -173,17 +173,7 @@ def submit_pharmacy_response(url_req_id=None):
         conn.close()
         print(f"NOTIFICATION CREATED: {notif_id}")
 
-        # Step 7-10: Send SMS to the patient safely without breaking pharmacy response
-        try:
-            from sms_service import send_patient_response_sms
-            send_patient_response_sms(
-                request_id=req_id,
-                pharmacy_id=pharmacy_id,
-                availability_status=availability,
-                notification_id=notif_id
-            )
-        except Exception as sms_err:
-            print(f"SMS notification failed: {sms_err}")
+
 
         status_text = "All medicines available" if availability == 'all_available' else ("Some medicines available" if availability == 'some_available' else "Not available")
 

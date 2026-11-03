@@ -50,27 +50,7 @@
       📍 Update Location
     </button>
 
-    <hr style="margin: 20px 0 16px 0; border: none; border-top: 1px solid var(--border-color);" />
 
-    <!-- SMS Notifications Preference -->
-    <div id="sms-pref-container" style="background: var(--bg-muted); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 1.1rem;">📱</span>
-          <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-main);">SMS Notifications</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span id="sms-pref-status-label" style="font-weight: 700; font-size: 0.82rem; padding: 2px 8px; border-radius: 9999px; background: #dcfce7; color: #166534;">ON</span>
-          <input type="checkbox" id="toggle-sms-notifications" checked onchange="toggleSMSPreference(this.checked)" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-color);">
-        </div>
-      </div>
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0 0 4px 0; line-height: 1.4;">
-        Receive text alerts on your phone (<strong id="sms-pref-masked-phone">Loading...</strong>) when a pharmacy responds.
-      </p>
-      <span style="font-size: 0.76rem; color: var(--text-muted); display: block;">
-        * In-app notifications remain active regardless of this setting.
-      </span>
-    </div>
   </div>
 
   <!-- Card 2: Create New Request -->

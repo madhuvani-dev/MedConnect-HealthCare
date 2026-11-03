@@ -135,6 +135,10 @@ a:hover {
   background: var(--primary-light);
 }
 
+.nav-link.active {
+  font-weight: 600;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;

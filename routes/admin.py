@@ -99,13 +99,18 @@ def reject_pharmacy(pharm_id):
 def get_admin_users():
     """
     Returns registered patients and user accounts for monitoring.
+    Uses COALESCE with pharmacies table so pharmacy coordinates are properly populated.
     """
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, name, email, phone, role, latitude, longitude, created_at
-        FROM users
-        ORDER BY created_at DESC;
+        SELECT u.id, u.name, u.email, u.phone, u.role,
+               COALESCE(u.latitude, p.latitude) as latitude,
+               COALESCE(u.longitude, p.longitude) as longitude,
+               u.created_at
+        FROM users u
+        LEFT JOIN pharmacies p ON u.id = p.user_id
+        ORDER BY u.created_at DESC;
     """)
     users = [dict(row) for row in cursor.fetchall()]
     conn.close()

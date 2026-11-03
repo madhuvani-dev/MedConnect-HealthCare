@@ -76,6 +76,25 @@ def pharmacy_dashboard():
     return render_template('pharmacy_dashboard.html')
 
 
+@app.route('/admin/login')
+def admin_login_page():
+    """Non-public administrative login route."""
+    if 'user_id' in session:
+        role = session.get('role')
+        if role == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('index'))
+    return render_template('login.html', is_admin_portal=True)
+
+
+@app.route('/admin')
+def admin_root():
+    """Redirects /admin to dashboard if authenticated admin, or /admin/login if not."""
+    if session.get('role') == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('admin_login_page'))
+
+
 @app.route('/admin/dashboard')
 @role_required('admin')
 def admin_dashboard():

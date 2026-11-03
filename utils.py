@@ -91,6 +91,8 @@ def role_required(required_role):
             if 'user_id' not in session:
                 if request.path.startswith('/api/'):
                     return jsonify({'error': 'Unauthorized. Please log in.'}), 401
+                if required_role == 'admin':
+                    return redirect(url_for('admin_login_page'))
                 return redirect(url_for('login_page'))
             
             user_role = session.get('role')

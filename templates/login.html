@@ -6,9 +6,15 @@
 <div style="max-width: 440px; margin: 20px auto;">
   <div class="card">
     <div class="card-header" style="text-align: center; display: block; border-bottom: none; padding-bottom: 0;">
-      <h2 class="card-title" style="font-size: 1.5rem;">MedConnect</h2>
+      <h2 class="card-title" style="font-size: 1.5rem;">
+        {% if is_admin_portal %}Admin Console{% else %}MedConnect{% endif %}
+      </h2>
       <p class="text-muted" style="font-size: 0.9rem; margin-top: 4px;">
-        Smart Healthcare & Medicine Availability Management
+        {% if is_admin_portal %}
+          Authorized Personnel Only &mdash; System Administration
+        {% else %}
+          Smart Healthcare & Medicine Availability Management
+        {% endif %}
       </p>
     </div>
 
@@ -27,10 +33,11 @@
       </div>
 
       <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">
-        Login
+        {% if is_admin_portal %}Authenticate as Admin{% else %}Login{% endif %}
       </button>
     </form>
 
+    {% if not is_admin_portal %}
     <!-- Quick Fill Demo Accounts -->
     <div style="margin-top: 18px; padding: 12px; background: var(--bg-surface); border: 1px dashed var(--border-color); border-radius: var(--radius-md); font-size: 0.85rem;">
       <div style="margin-bottom: 8px; font-weight: 600; color: var(--text-main); display: flex; justify-content: space-between; align-items: center;">
@@ -38,9 +45,6 @@
         <span class="text-muted" style="font-size: 0.75rem; font-weight: normal;">Click to auto-fill</span>
       </div>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="btn btn-sm btn-outline demo-login-btn" data-email="medconnect.admin@gmail.com" data-password="medconnectadmin2026" style="flex: 1; font-size: 0.8rem; padding: 5px 8px;">
-          🛡️ Admin
-        </button>
         <button type="button" class="btn btn-sm btn-outline demo-login-btn" data-email="aarav@test.com" data-password="pass123" style="flex: 1; font-size: 0.8rem; padding: 5px 8px;">
           👤 Patient
         </button>
@@ -61,6 +65,7 @@
         </a>
       </div>
     </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

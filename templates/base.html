@@ -22,15 +22,15 @@
       
       <nav>
         <ul class="nav-links">
-          <li><a href="{{ url_for('index') }}" class="nav-link">Home</a></li>
+          <li><a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
           
           {% if session.get('user_id') %}
             {% if session.get('role') == 'patient' %}
-              <li><a href="{{ url_for('patient_dashboard') }}" class="nav-link">Patient Dashboard</a></li>
+              <li><a href="{{ url_for('patient_dashboard') }}" class="nav-link {% if request.endpoint == 'patient_dashboard' %}active{% endif %}">Patient Dashboard</a></li>
             {% elif session.get('role') == 'pharmacy' %}
-              <li><a href="{{ url_for('pharmacy_dashboard') }}" class="nav-link">Pharmacy Portal</a></li>
+              <li><a href="{{ url_for('pharmacy_dashboard') }}" class="nav-link {% if request.endpoint == 'pharmacy_dashboard' %}active{% endif %}">Pharmacy Portal</a></li>
             {% elif session.get('role') == 'admin' %}
-              <li><a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin Panel</a></li>
+              <li><a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">Admin Panel</a></li>
             {% endif %}
             
             <!-- Notification Bell Component -->
@@ -63,8 +63,8 @@
               <button class="btn btn-sm btn-secondary btn-logout">Logout ({{ session.get('name') }})</button>
             </li>
           {% else %}
-            <li><a href="{{ url_for('login_page') }}" class="nav-link">Login</a></li>
-            <li><a href="{{ url_for('register_page') }}" class="btn btn-sm btn-primary">Register</a></li>
+            <li><a href="{{ url_for('login_page') }}" class="nav-link {% if request.endpoint in ('login_page', 'admin_login_page') %}active{% endif %}">Login</a></li>
+            <li><a href="{{ url_for('register_page') }}" class="nav-link {% if request.endpoint == 'register_page' %}active{% endif %}">Register</a></li>
           {% endif %}
         </ul>
       </nav>
