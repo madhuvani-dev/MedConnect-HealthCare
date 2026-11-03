@@ -14,10 +14,7 @@ from routes.notifications import notifications_bp
 app = Flask(__name__)
 
 # 2. Set the secret key
-secret_key = os.environ.get('SECRET_KEY')
-if not secret_key:
-    raise RuntimeError("SECRET_KEY environment variable is required.")
-app.secret_key = secret_key
+app.secret_key = os.environ.get('SECRET_KEY') or 'medconnect-dev-secret-key-2026'
 
 # 3. Create the uploads directory
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

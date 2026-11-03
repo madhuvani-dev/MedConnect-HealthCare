@@ -14,11 +14,27 @@ def get_pharmacy_feed():
     Also indicates if this pharmacy has already submitted a response.
     """
     pharmacy_id = session.get('pharmacy_id')
+    user_id = session.get('user_id')
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get this pharmacy's coordinates
-    cursor.execute("SELECT id, latitude, longitude, pharmacy_name FROM pharmacies WHERE id = ?;", (pharmacy_id,))
+    # Resolve pharmacy_id from user_id if missing from session
+    if not pharmacy_id and user_id:
+        cursor.execute("SELECT id FROM pharmacies WHERE user_id = ?;", (user_id,))
+        pharm_row = cursor.fetchone()
+        if pharm_row:
+            pharmacy_id = pharm_row['id']
+            session['pharmacy_id'] = pharmacy_id
+
+    # Get this pharmacy's coordinates and store details (with COALESCE fallback from users)
+    cursor.execute("""
+        SELECT p.id, COALESCE(p.latitude, u.latitude) as latitude,
+               COALESCE(p.longitude, u.longitude) as longitude,
+               p.pharmacy_name
+        FROM pharmacies p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?;
+    """, (pharmacy_id,))
     pharmacy = cursor.fetchone()
 
     if not pharmacy:
@@ -28,14 +44,14 @@ def get_pharmacy_feed():
     pharm_lat = pharmacy['latitude']
     pharm_lng = pharmacy['longitude']
 
-    # Fetch all active requests with patient details
+    # Fetch all active/pending requests with patient details regardless of pharmacy registration date
     cursor.execute("""
         SELECT r.id, r.patient_id, r.request_type, r.medicine_name, r.prescription_file,
                r.patient_lat, r.patient_lng, r.search_radius_km, r.status, r.created_at,
                u.name as patient_name, u.phone as patient_phone
         FROM requests r
         JOIN users u ON r.patient_id = u.id
-        WHERE r.status = 'active'
+        WHERE r.status IN ('active', 'pending')
         ORDER BY r.created_at DESC;
     """)
     all_requests = cursor.fetchall()
@@ -58,7 +74,8 @@ def get_pharmacy_feed():
         req_dict['distance_km'] = dist
         
         # Check if pharmacy is within the patient's search radius
-        if dist <= req['search_radius_km']:
+        search_radius = float(req['search_radius_km'] or 5.0)
+        if dist <= search_radius:
             req_dict['has_responded'] = req['id'] in my_responses
             req_dict['my_response'] = my_responses.get(req['id'])
             eligible_feed.append(req_dict)
@@ -126,8 +143,15 @@ def submit_pharmacy_response(url_req_id=None):
                 pharmacy_id = pharm_row['id']
                 session['pharmacy_id'] = pharmacy_id
 
-        # Get pharmacy details
-        cursor.execute("SELECT id, pharmacy_name, latitude, longitude FROM pharmacies WHERE id = ?;", (pharmacy_id,))
+        # Get pharmacy details (with COALESCE fallback from users)
+        cursor.execute("""
+            SELECT p.id, p.pharmacy_name,
+                   COALESCE(p.latitude, u.latitude) as latitude,
+                   COALESCE(p.longitude, u.longitude) as longitude
+            FROM pharmacies p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.id = ?;
+        """, (pharmacy_id,))
         pharmacy = cursor.fetchone()
         if not pharmacy:
             conn.close()
@@ -137,7 +161,7 @@ def submit_pharmacy_response(url_req_id=None):
         cursor.execute("SELECT id, patient_id, patient_lat, patient_lng, status FROM requests WHERE id = ?;", (req_id,))
         req = cursor.fetchone()
 
-        if not req or req['status'] != 'active':
+        if not req or req['status'] not in ('active', 'pending'):
             conn.close()
             return jsonify({'error': 'Request not found or no longer active.'}), 404
 

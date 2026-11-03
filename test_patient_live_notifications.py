@@ -4,6 +4,8 @@ import sys
 import unittest
 
 os.environ['MEDCONNECT_DB_PATH'] = os.path.join(os.path.dirname(__file__), 'medconnect_test.db')
+os.environ.setdefault('ADMIN_EMAIL', 'admin@test.com')
+os.environ.setdefault('ADMIN_PASSWORD', 'TestAdminPassword!123')
 
 from app import app
 from db import get_db, init_db
