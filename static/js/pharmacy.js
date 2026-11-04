@@ -99,7 +99,7 @@ async function loadPharmacyFeed() {
         }
       }
 
-      const dateStr = new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = formatISTDisplay(req.created_at);
 
       rowsHtml += `
         <tr>
@@ -153,6 +153,7 @@ function openResponseModal(reqId) {
         <p><strong>Patient:</strong> ${escapeHtml(req.patient_name)} (${escapeHtml(req.patient_phone)})</p>
         <p><strong>Prescription:</strong> <a href="/uploads/prescriptions/${req.prescription_file}" target="_blank" style="font-weight: 600; text-decoration: underline;">Click here to inspect prescription</a></p>
         <p><strong>Distance:</strong> ${req.distance_km} km</p>
+        <p style="margin: 0;"><strong>Request Time:</strong> ${escapeHtml(formatISTDisplay(req.created_at))}</p>
       </div>
     `;
   } else {
@@ -161,6 +162,7 @@ function openResponseModal(reqId) {
         <p><strong>Patient:</strong> ${escapeHtml(req.patient_name)} (${escapeHtml(req.patient_phone)})</p>
         <p><strong>Requested Medicine:</strong> <span style="font-size: 1.1rem; font-weight: 700; color: var(--primary-dark);">${escapeHtml(req.medicine_name)}</span></p>
         <p><strong>Distance:</strong> ${req.distance_km} km</p>
+        <p style="margin: 0;"><strong>Request Time:</strong> ${escapeHtml(formatISTDisplay(req.created_at))}</p>
       </div>
     `;
   }
@@ -245,4 +247,13 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function formatISTDisplay(ts) {
+  if (!ts) return 'Not Set';
+  const clean = String(ts).trim();
+  if (clean.includes('(IST)') || clean.endsWith('IST')) {
+    return clean;
+  }
+  return `${clean} (IST)`;
 }

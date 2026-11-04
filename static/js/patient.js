@@ -785,7 +785,7 @@ async function loadPatientRequests() {
         `;
       }
 
-      const dateFormatted = new Date(req.created_at).toLocaleString();
+      const dateFormatted = formatISTDisplay(req.created_at);
 
       rowsHtml += `
         <tr>
@@ -928,7 +928,7 @@ async function viewResponsesModal(reqId) {
     }
 
     if (modalSubtitle) {
-      modalSubtitle.textContent = `Current Search Radius: ${req.search_radius_km} km • Status: ${req.status.toUpperCase()}`;
+      modalSubtitle.textContent = `Created: ${formatISTDisplay(req.created_at)} • Current Search Radius: ${req.search_radius_km} km • Status: ${req.status.toUpperCase()}`;
     }
 
     // Configure Expand Radius button in modal
@@ -1350,4 +1350,13 @@ function escapeJsString(str) {
     .replace(/"/g, '\\"')
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r');
+}
+
+function formatISTDisplay(ts) {
+  if (!ts) return 'Not Set';
+  const clean = String(ts).trim();
+  if (clean.includes('(IST)') || clean.endsWith('IST')) {
+    return clean;
+  }
+  return `${clean} (IST)`;
 }

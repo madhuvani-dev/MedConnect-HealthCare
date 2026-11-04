@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from db import get_db
-from utils import save_prescription_file, role_required, calculate_haversine_distance
+from utils import save_prescription_file, role_required, calculate_haversine_distance, get_ist_now
 
 patient_bp = Blueprint('patient', __name__, url_prefix='/api/patient')
 
@@ -100,11 +100,12 @@ def create_patient_request():
         conn.close()
         return jsonify({'error': "Invalid request type. Must be 'prescription' or 'medicine_name'."}), 400
 
-    # Insert request with initial 5.0 km radius
+    ist_now = get_ist_now()
+    # Insert request with initial 5.0 km radius and IST timestamp
     cursor.execute("""
-        INSERT INTO requests (patient_id, request_type, medicine_name, prescription_file, patient_lat, patient_lng, search_radius_km, status)
-        VALUES (?, ?, ?, ?, ?, ?, 5.0, 'active');
-    """, (patient_id, req_type, medicine_name, prescription_filename, req_lat, req_lng))
+        INSERT INTO requests (patient_id, request_type, medicine_name, prescription_file, patient_lat, patient_lng, search_radius_km, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 5.0, 'active', ?);
+    """, (patient_id, req_type, medicine_name, prescription_filename, req_lat, req_lng, ist_now))
     
     conn.commit()
     new_request_id = cursor.lastrowid
@@ -127,7 +128,7 @@ def create_patient_request():
     return jsonify({
         'message': 'Request submitted successfully to verified pharmacies within 5 km radius!',
         'request_id': new_request_id,
-        'request': {'id': new_request_id}
+        'request': {'id': new_request_id, 'created_at': ist_now}
     }), 201
 
 
